@@ -27,7 +27,7 @@ l_count=0
 for line in lines:
     p=line.split()
     if len(p)!=0:
-        if p[0]!="var" and p[0]!="hlt" and len(p)<3 and p[0] not in te:
+        if p[0]!="var" and p[0]!="hlt" and ":" not in p[0] and len(p)<3 and p[0] not in te:
                 e="Incorrect instruction"
                 err=1
                 err_count=l_count
@@ -70,11 +70,18 @@ for line in lines:
                 break
 i_var=0       
 for line in lines:
-    p=line.split()
-    if len(p)!=0 and p[0]=="var":
-        var+=[[p[1],ins,i_var]]
-        ins+=1
-        i_var+=1
+    if err==0:
+        p=line.split()
+        if len(p)==1 and p[0]=="var":
+            err=1
+            e="variable not declared"
+            break
+        if len(p)!=0 and p[0]=="var":
+            var+=[[p[1],ins,i_var]]
+            ins+=1
+            i_var+=1
+    else:
+        break
 for i in range(len(var)):
     if err==0:
         if len(var[i])!=3:
@@ -135,6 +142,9 @@ for line in lines:
             count=count+1
             var_count=ic-1
         if p[0]=="hlt":
+            hc=ic
+            hcc=hcc+1
+        elif len(p)==2 and ":" in p[0] and p[1]=="hlt":
             hc=ic
             hcc=hcc+1
 for line in lines:
@@ -201,6 +211,9 @@ for line in lines:
             if err==1:
                 err_count=imm_count
                 break
+imm_list=[]
+for i in imm:
+    imm_list+=[i[0]]
 for i in imm:
     if int(i[0])>255 or int(i[0])<0:
             err=1
@@ -220,8 +233,8 @@ for line in lines:
             a=p[0]
             lb=a[:len(a)-1]
             if lb in dlabel:
-                if len(p)==5:  #ignoring the empty lines between the input file
-                    if p[1] in q:
+                if p[1] in q :  #ignoring the empty lines between the input file
+                    if len(p)==5:
                         op=op+q.get(p[1])
                         op=op+"00"
                         for i in range(2,len(p)):
@@ -238,11 +251,11 @@ for line in lines:
                                 e="registor not defined"
                                 break
                         s=s+op+"\n"
-                else:
-                    err=1
-                    err_count=line_count
-                    e="syntax error"
-                    break
+                    else:
+                        err=1
+                        err_count=line_count
+                        e="syntax error"
+                        break
             elif ":" in p[0] and lb not in dlabel:
                 err=1
                 err_count=line_count
@@ -261,7 +274,7 @@ for line in lines:
                             b=bin(dvar.get(p[2]))
                             op+=str(b)[2:].zfill(8)
                             s+=op+"\n"
-                        elif p[3] in label[0]:
+                        elif p[2] in dlabel:
                             err_count=line_count
                             e="misuse of label as variable"
                             err=1 
@@ -295,7 +308,7 @@ for line in lines:
                             b=bin(dvar.get(p[3]))
                             op+=str(b)[2:].zfill(8)
                             s+=op+"\n"
-                        elif p[3] in label[0]:
+                        elif p[3] in dlabel:
                             err_count=line_count
                             e="misuse of label as variable"
                             err=1 
@@ -371,13 +384,16 @@ for line in lines:
             err_count=line_count
             e="Incorrect hlt instruction"
             err=1
+        if len(p)==2 and ":" in p[0] and p[1]=="hlt":
+            op="0101000000000000"
+            s+=op+"\n"
     if len(p)>=3 :
         if p[0] in t1 and p[2] not in reg:
             if len(p)==3:
                 op+=t1.get(p[0])
                 if p[1] in reg and p[1]!="FLAGS":
                     op+=reg.get(p[1])
-                    if p[2][1:] in imm[0]:
+                    if p[2][1:] in imm_list:
                         b=bin(int(p[2][1:]))
                         op+=str(b)[2:].zfill(8)
                         s+=op+"\n"
@@ -405,21 +421,21 @@ for line in lines:
             if len(p)==3:
                 op+=t2.get(p[0])
                 op+="00000"
-                if p[1] in reg and p[1]!="FLAGS":
+                if p[1] in reg :
                     op+=reg.get(p[1])
-                    if p[2] in reg:
+                    if p[2] in reg and p[2]!="FLAGS":
                         op+=reg.get(p[2])
                         s+=op+"\n"
+                    elif p[2]=="FLAGS":
+                        err_count=line_count
+                        e="This operation is not allowed on FLAGS"
+                        err=1
+                        break
                     else:
                         err_count=line_count
                         e="register not defined"
                         err=1
                         break
-                elif p[1]=="FLAGS":
-                    err_count=line_count
-                    e="This operation is not allowed on FLAGS"
-                    err=1
-                    break    
                 else:
                     err_count=line_count
                     e="register not defined"
@@ -435,7 +451,7 @@ for line in lines:
                 op+=t1.get(p[1])
                 if p[2] in reg and p[2]!="FLAGS":
                     op+=reg.get(p[2])
-                    if p[3][1:] in imm[0]:
+                    if p[3][1:] in imm_list:
                         b=bin(int(p[3][1:]))
                         op+=str(b)[2:].zfill(8)
                         s+=op+"\n"
@@ -463,21 +479,21 @@ for line in lines:
             if len(p)==4 and ":" in p[0]:
                 op+=t2.get(p[1])
                 op+="00000"
-                if p[2] in reg and p[2]!="FLAGS":
+                if p[2] in reg :
                     op+=reg.get(p[2])
-                    if p[3] in reg:
+                    if p[3] in reg and p[3]!="FLAGS":
                         op+=reg.get(p[3])
                         s+=op+"\n"
+                    elif p[3]=="FLAGS":
+                        err_count=line_count
+                        e="This operation is not allowed on FLAGS"
+                        err=1
+                        break 
                     else:
                         err_count=line_count
                         e="register not defined"
                         err=1
-                        break
-                elif p[2]=="FLAGS":
-                    err_count=line_count
-                    e="This operation is not allowed on FLAGS"
-                    err=1
-                    break    
+                        break   
                 else:
                     err_count=line_count
                     e="register not defined"
