@@ -1,4 +1,3 @@
-# changes
 import sys
 var=[] #only one hlt instruction
 label=[] 
