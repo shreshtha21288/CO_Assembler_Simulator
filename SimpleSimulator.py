@@ -73,7 +73,7 @@ class REG:
             print(self[i]," ")
         print("\n")
 
-rf=REG.initialize()
+rf=REG()
 
 def checkOverflow(r3):
     if r3>(2**16-1) and r3<0:
@@ -150,8 +150,6 @@ def AND(inst):
     return rf.update_register(r3,inst[13:16])
 # Execution Engine
 class EE:
-    pc=PC.initialize()
-    new_counter=0
     def execute(inst,rf,pc,var_mem):
         #inst contains the line,rf is the registers,pc is the program counter
         #je
@@ -328,10 +326,21 @@ class EE:
             print("And")
         if inst=="0101000000000000":
             halted=True
+        return halted,pc.getPC()
 
     
 
 
 if __name__=="__main__":
-    MEMORY.initialize()
-    inst=MEMORY.getdata()
+    var_mem=[]
+    rf=REG()
+    mem=MEMORY()
+    Program_counter = PC()
+    new_counter=0
+    halted = False
+    while not halted:        
+        Instruction = mem.getdata(Program_counter.getPC())
+        halted, new_PC = EE.execute(Instruction,rf,Program_counter,var_mem)
+        Program_counter.dump()
+        rf.dump()
+    mem.dump()
