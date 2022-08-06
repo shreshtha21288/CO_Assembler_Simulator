@@ -326,6 +326,8 @@ class EE:
             new_counter+=1
             pc.update(new_counter)
             print("And")
+        if inst=="0101000000000000":
+            halted=True
 
     
 
