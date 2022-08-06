@@ -7,7 +7,7 @@ class MEMORY:
     def initialize(self):
         lines=sys.stdin.readlines()
         for line in lines:
-            self.memory+=[line]
+            self.memory+=[line[0:16]]
         if len(self.memory)<=255:
             empty_space=256-len(self.memory)
             while empty_space!=0:
