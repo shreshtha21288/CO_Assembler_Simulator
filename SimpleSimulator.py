@@ -19,13 +19,8 @@ class MEMORY:
 
     def setValue(self,value,mem_addr):
         self.memory[mem_addr]=value
-    def dump(self,var_mem):
-        mem=[]
-        for line in self.memory:
-            mem+=line
-        for line in var_mem:
-            mem+=line
-        for inst in mem:
+    def dump(self):
+        for inst in self.memory:
             print(inst)
 
 # Program Counter Implementation
@@ -37,7 +32,7 @@ class PC:
     def update(self,newcounter):
         self.program_counter=newcounter
     def dump(self):
-        print(bin(self.program_counter)[2:].zfill(8)," ")
+        print(bin(self.program_counter)[2:].zfill(8),end=" ")
     def getPC(self):
         return self.program_counter
 
@@ -163,98 +158,97 @@ def AND(inst):
     return rf.update_register(r3,inst[13:16])
 # Execution Engine
 class EE:
-    new_counter=0
-    def execute(inst,rf,pc,mem,new_counter,halted):
+    # new_counter=0
+    def execute(inst,rf,pc,mem):
         #inst contains the line,rf is the registers,pc is the program counter
         #je
         if inst[:5]=="01111":
             flag=rf.getflag()
             if flag[-1]=="1":
-                new_counter=int(inst[8:],2)
-                pc.update(new_counter)
+                new_counter=int(inst[8:],2)                
             else:
-                new_counter+=1
-                pc.update(new_counter)
+                new_counter=(pc.getPC()+1)
+            halted=False    
             rf.resetFlag() 
         #jgt
         if inst[:5]=="01101":
             flag=rf.getflag()
             if flag[-2]=="1":
                 new_counter=int(inst[8:],2)
-                pc.update(new_counter)
+                
             else:
-                new_counter+=1
-                pc.update(new_counter)
+                new_counter=pc.getPC()+1
+            halted=False    
             rf.resetFlag()  
         #jlt
         if inst[:5]=="01100":
             flag=rf.getflag()
             if flag[-3]=="1":  
                 new_counter=int(inst[8:],2)
-                pc.update(new_counter)
+                
             else:
-                new_counter+=1
-                pc.update(new_counter)
+                new_counter=pc.getPC()+1
+            halted=False    
             rf.resetFlag()  
         #jmp
         if inst[:5]=="11111":
             new_counter=int(inst[8:],2)
-            pc.update(new_counter)
+            halted=False
             rf.resetFlag()
         #ld
         if inst[:5]=="10100":
             ch=inst[5:8]
             mem_addr=int(inst[8:],2)
             rf.resetFlag()
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             val=mem.getdata(mem_addr)
-            rf.update_register(ch,val)
+            rf.update_register(val,ch)
             #update the var mem where var_mem is the list containing the memory for the variables
         #st
         if inst[:5]=="10101":
             ch=reg(inst[5:8])
             mem_addr=int(inst[8:],2)
             rf.resetFlag()
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             mem.setValue(ch,mem_addr)
 
         # if inst[:5]=="10010":
         #         flag=rf.getflag()
         #         if flag[-1]=="1":
         #                 new_counter=int(inst[8:],2)
-        #                 pc.update(new_counter)
+        #                 
         #         else:
-        #                 new_counter+=1
-        #                 pc.update(new_counter)
+        #                 new_counter=pc.getPC()+1
+        #                 
         #         rf.resetFlag()
         #ls
         if inst[:5]=="11001":
                 flag=rf.getflag()
                 if flag[-2]=="1":
                         new_counter=int(inst[8:],2)
-                        pc.update(new_counter)
+                        
                 else:
-                        new_counter+=1
-                        pc.update(new_counter)
+                        new_counter=pc.getPC()+1
+                halted=False        
                 rf.resetFlag()
 
         if inst[:5]=="10010":
             r1=inst[5:8:]       
             imm=inst[8::]        
             value=bin(int(imm,2))[2:].zfill(16)    
-            rf.update_register(r1, value)
-            new_counter+=1
-            pc.update(new_counter)
+            rf.update_register(value,r1)
+            new_counter=pc.getPC()+1
+            halted=False
             rf.resetFlag()
         #ls
         if inst[:5]=="11001":
             r1=reg(inst[5:8:])
             imm=int(inst[8::],2)
             shiftedString=r1[imm::] + '0' * imm
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             rf.update_register(shiftedString,inst[5:8])
             rf.resetFlag()
         #type C
@@ -262,9 +256,9 @@ class EE:
         if inst[:5]=="10011":
             r1=inst[10:13:]      
             r2=inst[13::]        
-            new_counter+=1
-            pc.update(new_counter)
-            rf.update_register(r1,reg(r2))
+            new_counter=pc.getPC()+1
+            halted=False
+            rf.update_register(reg(r2),r1)
             rf.resetFlag()
         #div
         if inst[:5]=="10111":
@@ -274,16 +268,16 @@ class EE:
             q=r1//r2
             rf.update_register(q,"000")
             rf.update_register(r,"001")
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             rf.resetFlag()
         #rs
         if inst[:5]=="11000":
             r1=reg(inst[5:8:])
             imm=int(inst[8::],2)
             shiftedString=  '0' * imm + r1[:len(r1)-imm:]  
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             rf.update_register(shiftedString,inst[5:8])
             rf.resetFlag()
         #not
@@ -296,9 +290,9 @@ class EE:
                     inv+='0'
                 else:
                     inv+='1'
-            rf.update_register(r1, r2)
-            new_counter+=1
-            pc.update(new_counter)
+            rf.update_register(r2,r1)
+            new_counter=pc.getPC()+1
+            halted=False
             rf.resetFlag()
         #cmp
         if inst[:5]=="11110":
@@ -310,58 +304,60 @@ class EE:
                 rf.G_Flag()
             else:
                 rf.E_Flag()
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
         if inst[:5]=="10000":
             add(inst)
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             print("add")
         if inst[:5]=="10001":
             sub(inst)
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             print("subtract")
         if inst[:5]=="10110":
             mul(inst)
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             print("Multiply")
         if inst[:5]=="11010":
             XOR(inst)
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             print("Xor")
-        if inst[5:]=="11011":
+        if inst[:5]=="11011":
             OR(inst)
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             print("or")
-        if inst[5:]=="11100":
+        if inst[:5]=="11100":
             AND(inst)
-            new_counter+=1
-            pc.update(new_counter)
+            new_counter=pc.getPC()+1
+            halted=False
             print("And")
-        if inst=="0101000000000000":
+        # if inst=="0101000000000000":
+        if inst[:5]=="01010":
             halted=True
-        return halted,pc.getPC()
+            new_counter=pc.getPC()+1
+        
+        return halted,new_counter
 
     
 
 
 if __name__=="__main__":
-    var_mem={}
+    var_mem=[]
     rf=REG()
     # rf.initialize()
     mem=MEMORY()
     mem.initialize()
     Program_counter = PC()
     Program_counter.initialize()
-    new_counter=0
-    halted = False
+    halted=False
     while halted==False:        
         Instruction = mem.getdata(Program_counter.getPC())
-        halted, new_PC = EE.execute(Instruction,rf,Program_counter,mem,new_counter,halted)
-        Program_counter.dump()
-        rf.dump()
+        halted, new_PC = EE.execute(Instruction,rf,Program_counter,mem)
+        Program_counter.dump(),rf.dump()
+        Program_counter.update(new_PC)
     mem.dump()
