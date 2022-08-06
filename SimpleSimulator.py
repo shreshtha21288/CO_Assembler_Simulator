@@ -19,8 +19,9 @@ class MEMORY:
     def setValue(self,value,mem_addr):
         self.memory[mem_addr]=value
     def dump(self):
-        for inst in self.memory:
-            print(inst)
+        for line in self.memory:
+            if len(line)!=0:
+                print(line)
 
 # Program Counter Implementation
 
@@ -47,8 +48,6 @@ class REG:
                             "110": 0               # R6
                         }
     FLAG = "0000000000000000"
-    # def initialize(self):
-    #     self.rf
     def get_r(self):
         return self.r
     def resetFlag(self):
@@ -74,6 +73,7 @@ class REG:
         for i in self.r:
             out+=bin(self.r[i])[2:].zfill(16)+" "
         out+=(self.FLAG)
+        # print(self.r)
         print(out)
     def getflag(self):
         return self.FLAG
@@ -253,11 +253,14 @@ class EE:
         #type C
         #mov reg
         if inst[:5]=="10011":
-            r1=inst[10:13:]      
+            r1=inst[10:13:]
             r2=inst[13::]        
             new_counter=pc.getPC()+1
             halted=False
-            rf.update_register(reg(r2),r1)
+            if r1=="111":
+                rf.update_register(rf.getflag(),r2)
+            else:
+                rf.update_register(reg(r1),r2)
             rf.resetFlag()
         #div
         if inst[:5]=="10111":
@@ -309,33 +312,28 @@ class EE:
             add(inst)
             new_counter=pc.getPC()+1
             halted=False
-            print("add")
         if inst[:5]=="10001":
             sub(inst)
             new_counter=pc.getPC()+1
             halted=False
-            print("subtract")
         if inst[:5]=="10110":
             mul(inst)
             new_counter=pc.getPC()+1
             halted=False
-            print("Multiply")
         if inst[:5]=="11010":
             XOR(inst)
             new_counter=pc.getPC()+1
             halted=False
-            print("Xor")
+            
         if inst[:5]=="11011":
             OR(inst)
             new_counter=pc.getPC()+1
             halted=False
-            print("or")
         if inst[:5]=="11100":
             AND(inst)
             new_counter=pc.getPC()+1
             halted=False
-            print("And")
-        # if inst=="0101000000000000":
+            
         if inst[:5]=="01010":
             halted=True
             new_counter=pc.getPC()+1
