@@ -1,4 +1,4 @@
-# CO_Project
+# CO_Assembler_Simulator
 
 This is our CO Project 
 
